@@ -184,24 +184,19 @@
   </div>
 
   <script>
-    // 1. 初始化 LIFF
     async function initLiff() {
       try {
         await liff.init({ liffId: "2009215159-q6jtL43l" });
-        console.log('LIFF 初始化成功');
-
-        // 登入處理
-        if (!liff.isLoggedIn()) {
-          console.log('尚未登入，執行登入程序...');
-          liff.login();
+        if (!liff.isInClient()) {
+          console.log('在外部瀏覽器開啟');
+          return;
         }
-      } catch (error) {
-        console.error('LIFF 初始化失敗：', error.code, error.message);
-        // 如果在這裡噴錯，通常是 LINE Console 的 URL 設定與目前網址不符
+        if (!liff.isLoggedIn()) liff.login();
+      } catch(e){ 
+        console.error('LIFF init failed', e); 
       }
     }
 
-    // 2. 設定今日日期
     (function setToday() {
       const d = new Date();
       const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -210,32 +205,16 @@
       if (el) el.textContent = `📅 ${mm}/${dd}`;
     })();
 
-    // 3. 執行動作 (傳送訊息並關閉視窗)
     function sendAction(text) {
-      if (!liff.isLoggedIn()) {
-        alert('請先登入');
-        liff.login();
+      if (!window.liff || !liff.isInClient()) {
+        console.log('非 LINE 環境，動作：' + text);
         return;
       }
-
-      if (liff.isInClient()) {
-        liff.sendMessages([{ type: "text", text: text }])
-          .then(() => {
-            console.log('訊息傳送成功：', text);
-            liff.closeWindow(); // 傳送成功後關閉 LIFF 視窗
-          })
-          .catch((err) => {
-            console.error('傳送失敗：', err);
-            // 提醒：請確保 LINE Developers Console 有勾選 chat_message.write 權限
-            alert('傳送失敗，請確認是否授權傳送訊息權限');
-          });
-      } else {
-        console.log('非 LINE App 環境，動作：' + text);
-        alert('此功能僅限在 LINE 內使用');
-      }
+      liff.sendMessages([{ type: "text", text }])
+        .then(() => liff.closeWindow())
+        .catch(err => console.error(err));
     }
 
-    // 執行初始化
     initLiff();
   </script>
 </body>
